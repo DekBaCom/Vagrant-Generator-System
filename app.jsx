@@ -365,10 +365,15 @@ function TopBar({ tmpl, cfg, errCount, downloadFlash, onDownload }) {
           <span className="bs-status-dot"></span>
           <span>{errCount ? `${errCount} issue${errCount > 1 ? 's' : ''}` : 'All checks pass'}</span>
         </div>
-        <button className="btn btn--ghost">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"/><path d="M16 3h5v5"/><path d="M10 14L21 3"/></svg>
-          Share
-        </button>
+        <a
+          className="btn btn--ghost"
+          href="https://github.com/DekBaCom/Vagrant-Generator-System/blob/main/INSTALL_TH.md"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          Guide
+        </a>
         <button
           className={`btn btn--primary ${downloadFlash ? 'btn--flash' : ''}`}
           onClick={onDownload}
@@ -411,6 +416,28 @@ function Footer() {
       <span className="bs-footer-sep">·</span>
       <span className="bs-footer-label">E-Mail :</span>
       <a className="bs-footer-email" href="mailto:Abdulloh.eg@gmail.com">Abdulloh.eg@gmail.com</a>
+
+      <div className="bs-footer-links">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span className="bs-footer-label">Setup Guide :</span>
+        <a
+          className="bs-footer-link"
+          href="https://github.com/DekBaCom/Vagrant-Generator-System#readme"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          README (EN)
+        </a>
+        <span className="bs-footer-sep">·</span>
+        <a
+          className="bs-footer-link"
+          href="https://github.com/DekBaCom/Vagrant-Generator-System/blob/main/INSTALL_TH.md"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          คู่มือ (TH)
+        </a>
+      </div>
     </footer>
   );
 }

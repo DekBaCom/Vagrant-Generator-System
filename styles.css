@@ -1017,6 +1017,18 @@ body {
   text-decoration: none;
 }
 .bs-footer-email:hover { text-decoration: underline; }
+.bs-footer-links {
+  margin-left: auto;
+  display: flex; align-items: center; gap: 7px;
+  color: var(--ink-2);
+}
+.bs-footer-link {
+  font-size: 11.5px;
+  color: var(--ac);
+  text-decoration: none;
+  font-weight: 500;
+}
+.bs-footer-link:hover { text-decoration: underline; }
 
 /* ── Solution editor accordion ────────────────────────────────────────── */
 .sol-editor { max-width: 720px; }
