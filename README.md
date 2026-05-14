@@ -125,6 +125,7 @@ vagrant destroy
 | **Active Directory DC** | Windows Server 2022 | Hyper-V | 4 | 8 GB | 3389, 389, 636 |
 | **AD DS + Windows Client** ⭐ | WS2022 + Win10 (2 VMs) | Hyper-V | 4+2 | 8+4 GB | 3389×2, 389, 636 |
 | **AD DS + 2 Windows Clients** ⭐ | WS2022 + Win10 × 2 (3 VMs) | Hyper-V | 4+2+2 | 8+4+4 GB | 3389×3, 389, 636 |
+| **WS2025 AD + DHCP + Win11** ⭐ | WS2025 × 2 + Win11 × 2 (4 VMs) | Hyper-V | 4+2+2+2 | 8+4+4+4 GB | 3389×4, 389, 636 |
 
 ---
 
@@ -228,6 +229,48 @@ vagrant destroy
 ```
 
 > **Security:** The generated `Vagrantfile` uses placeholder credentials. Change all passwords before committing to version control. Never store real credentials in source control.
+
+---
+
+## WS2025 AD + DHCP + Win11 Solution
+
+The **WS2025 AD + DHCP + Win11** solution provisions a complete Windows Server 2025 lab with:
+
+- **dc-01** — Windows Server 2025 Domain Controller (AD DS + DNS, domain `lab.local`)
+- **dhcp-01** — Windows Server 2025 DHCP Server (joins domain, serves `192.168.56.100–200`)
+- **win11-client-1** — Windows 11 Pro, auto-joins `lab.local`
+- **win11-client-2** — Windows 11 Pro, auto-joins `lab.local`
+
+### Network layout
+
+| VM | Private IP | RDP (host) | Notes |
+|---|---|---|---|
+| dc-01 | 192.168.56.80 | 13389 | LDAP 10389, LDAPS 10636 |
+| dhcp-01 | 192.168.56.81 | 13392 | DHCP scope 56.100–56.200 |
+| win11-client-1 | 192.168.56.82 | 13390 | — |
+| win11-client-2 | 192.168.56.83 | 13391 | — |
+
+### Requirements
+
+- **Hyper-V** enabled (Windows 10/11 Pro or Server)
+- At least **20 GB RAM** free (DC: 8 GB, others: 4 GB each)
+
+### Usage
+
+```bash
+vagrant up
+
+# Connect
+vagrant rdp dc-01
+vagrant rdp dhcp-01
+vagrant rdp win11-client-1
+
+# Verify DHCP inside dc-01 or dhcp-01
+Get-DhcpServerv4Scope
+Get-DhcpServerv4Lease -ScopeId 192.168.56.0
+```
+
+> **Security:** Change all passwords before committing the downloaded Vagrantfile to version control.
 
 ---
 
