@@ -124,6 +124,7 @@ vagrant destroy
 | Windows Test Bench | Windows Server 2022 | Hyper-V | 4 | 8 GB | 3389→13389 |
 | **Active Directory DC** | Windows Server 2022 | Hyper-V | 4 | 8 GB | 3389, 389, 636 |
 | **AD DS + Windows Client** ⭐ | WS2022 + Win10 (2 VMs) | Hyper-V | 4+2 | 8+4 GB | 3389×2, 389, 636 |
+| **AD DS + 2 Windows Clients** ⭐ | WS2022 + Win10 × 2 (3 VMs) | Hyper-V | 4+2+2 | 8+4+4 GB | 3389×3, 389, 636 |
 
 ---
 
@@ -179,6 +180,54 @@ config.vm.provision "shell", inline: <<-SHELL
     Add-Computer -DomainName "lab.local" -Credential $cred -Restart -Force
   SHELL
 ```
+
+---
+
+## AD DS + 2 Windows Clients Solution
+
+The **AD DS + 2 Windows Clients** solution template generates a ready-to-use multi-VM `Vagrantfile` with:
+
+- **dc-01** — Windows Server 2022 Domain Controller (promotes to `lab.local`)
+- **win-client-1** — Windows 10 client, auto-joins domain after DC is ready
+- **win-client-2** — Windows 10 client, auto-joins domain after DC is ready
+
+### Network layout
+
+| VM | Private IP | RDP (host) | Notes |
+|---|---|---|---|
+| dc-01 | 192.168.56.70 | 13389 | LDAP 10389, LDAPS 10636 |
+| win-client-1 | 192.168.56.71 | 13390 | — |
+| win-client-2 | 192.168.56.72 | 13391 | — |
+
+### Requirements
+
+- **Hyper-V** enabled on the host (Windows 10/11 Pro or Server)
+- At least **20 GB RAM** free on the host (DC: 8 GB, each client: 4 GB)
+- At least **80 GB** free disk space
+
+### Usage
+
+```bash
+# Start all three VMs (DC provisions first, clients join after DC reboots)
+vagrant up
+
+# Connect to the Domain Controller
+vagrant rdp dc-01
+
+# Connect to a Windows client
+vagrant rdp win-client-1
+vagrant rdp win-client-2
+
+# Verify AD inside dc-01
+Get-ADDomain
+Get-ADComputer -Filter *
+
+# Stop / destroy
+vagrant halt
+vagrant destroy
+```
+
+> **Security:** The generated `Vagrantfile` uses placeholder credentials. Change all passwords before committing to version control. Never store real credentials in source control.
 
 ---
 
