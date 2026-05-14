@@ -189,6 +189,23 @@
         provisioners: [],
       },
     },
+    win11: {
+      id: 'win11',
+      name: 'Windows 11 Desktop',
+      tagline: 'Windows 11 Pro, RDP-ready dev/test desktop',
+      glyph: '◩',
+      defaults: {
+        hostname: 'win11-desk',
+        box: 'gusztavvargadr/windows-11',
+        provider: 'hyperv',
+        cpus: 2, memory: 4096,
+        privateIp: '192.168.56.90',
+        publicNetwork: false,
+        forwards: [{ guest: 3389, host: 13393, protocol: 'tcp' }],
+        sync: { host: '.', guest: 'C:\\vagrant', type: 'smb' },
+        provisioners: [],
+      },
+    },
     ad: {
       id: 'ad',
       name: 'Active Directory DC',

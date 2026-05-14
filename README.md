@@ -122,6 +122,7 @@ vagrant destroy
 | Docker Host | Ubuntu 24.04 | VirtualBox | 4 | 8 GB | 2375→12375 |
 | CI Runner | Debian 12 | VirtualBox | 6 | 8 GB | — |
 | Windows Test Bench | Windows Server 2022 | Hyper-V | 4 | 8 GB | 3389→13389 |
+| Windows 11 Desktop | Windows 11 Pro | Hyper-V | 2 | 4 GB | 3389→13393 |
 | **Active Directory DC** | Windows Server 2022 | Hyper-V | 4 | 8 GB | 3389, 389, 636 |
 | **AD DS + Windows Client** ⭐ | WS2022 + Win10 (2 VMs) | Hyper-V | 4+2 | 8+4 GB | 3389×2, 389, 636 |
 | **AD DS + 2 Windows Clients** ⭐ | WS2022 + Win10 × 2 (3 VMs) | Hyper-V | 4+2+2 | 8+4+4 GB | 3389×3, 389, 636 |
