@@ -7,8 +7,7 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "accent": "amber",
   "previewSide": "right",
   "density": "regular",
-  "lineNumbers": true,
-  "showBanner": true
+  "lineNumbers": true
 }/*EDITMODE-END*/;
 
 const ACCENTS = {
@@ -319,15 +318,7 @@ function App() {
           options={['compact', 'regular', 'comfy']}
           onChange={(v) => setTweak('density', v)}
         />
-        <TweakSection label="Chrome" />
-        <TweakToggle
-          label="Top banner"
-          value={t.showBanner}
-          onChange={(v) => setTweak('showBanner', v)}
-        />
       </TweaksPanel>
-
-      {t.showBanner && <TopBanner />}
     </div>
   );
 }
@@ -442,16 +433,5 @@ function Footer() {
   );
 }
 
-function TopBanner() {
-  return (
-    <div className="bs-banner">
-      <span className="bs-banner-dot"></span>
-      <span>
-        <b>Phase 1</b> · client-side generation, no backend.{' '}
-        <span className="bs-banner-faint">Phase 2 will add save/share + Ansible + cloud providers.</span>
-      </span>
-    </div>
-  );
-}
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
