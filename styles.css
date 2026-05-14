@@ -996,6 +996,38 @@ body {
   color: var(--ac);
 }
 
+/* ── Solution editor accordion ────────────────────────────────────────── */
+.sol-editor { max-width: 720px; }
+.sol-editor .sol-vms { margin-top: 22px; }
+
+.sol-acc { border-radius: 12px; overflow: hidden; }
+
+.sol-acc-head {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; padding: 11px 16px;
+  background: linear-gradient(180deg, var(--bg-2), var(--bg-1));
+  border: none;
+  color: inherit; font: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background 100ms;
+}
+.sol-acc-head:hover { background: linear-gradient(180deg, var(--bg-3), var(--bg-2)); }
+.sol-acc--open .sol-acc-head {
+  border-bottom: 1px solid var(--line);
+}
+
+.sol-acc-meta {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px; color: var(--ink-2);
+  margin-left: auto;
+}
+.sol-acc-chev { color: var(--ink-2); font-size: 10px; margin-left: 6px; flex-shrink: 0; }
+
+.sol-acc-body { padding: 0 16px 16px; background: var(--bg-1); }
+.sol-acc-body .sect { margin-top: 14px; }
+.sol-acc-body .sect:last-child { margin-bottom: 0; }
+
 /* ── responsive trims ──────────────────────────────────────────────────── */
 @media (max-width: 1200px) {
   .bs-workbench { grid-template-columns: 220px minmax(0,1fr) minmax(0,1fr); }

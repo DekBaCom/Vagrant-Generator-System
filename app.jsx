@@ -25,6 +25,7 @@ function App() {
 
   const [templateId, setTemplateId] = useState('web');
   const [cfg, setCfg] = useState(() => structuredClone(TEMPLATES.web.defaults));
+  const [solutionCfg, setSolutionCfg] = useState(null);
   const [copied, setCopied] = useState(false);
   const [changedKeys, setChangedKeys] = useState(new Set());
   const [downloadFlash, setDownloadFlash] = useState(false);
@@ -37,8 +38,10 @@ function App() {
   const errors = useMemo(() => isSolution ? {} : validate(cfg), [isSolution, cfg]);
   const errCount = Object.keys(errors).length;
   const lines = useMemo(
-    () => isSolution ? generateSolution(tmplObj) : generate(cfg),
-    [isSolution, tmplObj, cfg]
+    () => isSolution
+      ? generateSolution(tmplObj, solutionCfg || tmplObj.vms)
+      : generate(cfg),
+    [isSolution, tmplObj, solutionCfg, cfg]
   );
 
   // Diff against previous render — flash any line whose key changed.
@@ -71,8 +74,11 @@ function App() {
 
   const pickTemplate = (id) => {
     setTemplateId(id);
-    if (!TEMPLATES[id].solution) {
+    if (TEMPLATES[id].solution) {
+      setSolutionCfg(structuredClone(TEMPLATES[id].vms));
+    } else {
       setCfg(structuredClone(TEMPLATES[id].defaults));
+      setSolutionCfg(null);
     }
   };
 
@@ -138,7 +144,11 @@ function App() {
 
         <main className="bs-form">
           {isSolution ? (
-            <SolutionView tmpl={tmpl} />
+            <SolutionEditor
+              tmpl={tmpl}
+              vms={solutionCfg || tmplObj.vms}
+              onChange={setSolutionCfg}
+            />
           ) : (
           <>
           <FormHeader tmpl={tmpl} cfg={cfg} />
@@ -342,7 +352,9 @@ function TopBar({ tmpl, cfg, errCount, downloadFlash, onDownload }) {
         <span className="bs-bc-sep">/</span>
         <span>{tmpl.name}</span>
         <span className="bs-bc-sep">/</span>
-        <span className="bs-bc-current">{cfg.hostname || 'unnamed'}</span>
+        <span className="bs-bc-current">
+          {tmpl.solution ? `${tmpl.vms.length} VMs` : (cfg.hostname || 'unnamed')}
+        </span>
         <span className="bs-bc-edit">●</span>
       </div>
 
@@ -388,57 +400,6 @@ function FormHeader({ tmpl, cfg }) {
   );
 }
 
-function ComputeSummary({ cpus, memory }) {
-  const gb = (memory / 1024).toFixed(memory % 1024 === 0 ? 0 : 1);
-  return (
-    <div className="cmp-summary">
-      <div className="cmp-pill">
-        <span className="cmp-pill-n">{cpus}</span>
-        <span className="cmp-pill-u">vCPU</span>
-      </div>
-      <div className="cmp-pill">
-        <span className="cmp-pill-n">{gb}</span>
-        <span className="cmp-pill-u">GB RAM</span>
-      </div>
-    </div>
-  );
-}
-
-function MemoryMeter({ memory }) {
-  const max = 16384;
-  const pct = Math.min(100, (memory / max) * 100);
-  const ticks = [512, 2048, 4096, 8192, 16384];
-  return (
-    <div className="mm">
-      <div className="mm-track">
-        <div className="mm-fill" style={{ width: `${pct}%` }}></div>
-        {ticks.map((tk) => (
-          <div key={tk} className="mm-tick" style={{ left: `${(tk / max) * 100}%` }}>
-            <span className="mm-tick-lbl">{tk >= 1024 ? `${tk / 1024}G` : `${tk}M`}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function SecurityNote() {
-  return (
-    <div className="sec-note">
-      <div className="sec-note-glyph">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg>
-      </div>
-      <div className="sec-note-body">
-        <div className="sec-note-title">Secrets stay out of the file</div>
-        <div className="sec-note-text">
-          Boxsmith never bakes passwords, SSH private keys, or cloud credentials into the generated
-          Vagrantfile. Reference them via environment variables (<code>ENV["VAULT_TOKEN"]</code>) or
-          a separate <code>.env</code> after download.
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function TopBanner() {
   return (

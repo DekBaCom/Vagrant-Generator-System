@@ -390,7 +390,8 @@
   }
 
   // ── multi-VM solution generator ─────────────────────────────────────────
-  function generateSolution(tmpl) {
+  function generateSolution(tmpl, customVms) {
+    const vms = customVms || tmpl.vms;
     const L = [];
     const push = (text, kind = 'code', key = null) => L.push({ text, kind, key });
 
@@ -401,7 +402,7 @@
     push('');
     push('Vagrant.configure("2") do |config|', 'code');
 
-    tmpl.vms.forEach((vm, vi) => {
+    vms.forEach((vm, vi) => {
       push(`  # ── ${vm.role} (${vm.name}) ${'─'.repeat(Math.max(0, 36 - vm.role.length - vm.name.length))}`, 'comment');
       push(`  config.vm.define ${rubyStr(vm.name)} do |m|`, 'code', `vm${vi}`);
       push(`    m.vm.box = ${rubyStr(vm.box)}`, 'code', `vm${vi}-box`);
@@ -458,7 +459,7 @@
       }
 
       push('  end', 'code');
-      if (vi < tmpl.vms.length - 1) push('');
+      if (vi < vms.length - 1) push('');
     });
 
     push('end', 'code');

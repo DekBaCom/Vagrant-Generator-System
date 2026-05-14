@@ -321,95 +321,229 @@ function ProvisionerPicker({ selected, onChange, catalog }) {
   );
 }
 
-// ── Solution view ─────────────────────────────────────────────────────────
-function SolutionView({ tmpl }) {
-  const { PROVISIONERS, PROVIDER_LABEL } = window.Boxsmith;
+// ── Compute summary + meter ───────────────────────────────────────────────
+function ComputeSummary({ cpus, memory }) {
+  const gb = (memory / 1024).toFixed(memory % 1024 === 0 ? 0 : 1);
   return (
-    <div className="sol-root">
-      <div className="bs-form-head">
-        <div className="bs-form-eyebrow">
-          <span className="bs-form-glyph">{tmpl.glyph}</span>
-          <span>{tmpl.name}</span>
-          <span className="bs-form-tag sol-badge">Multi-VM Solution · {tmpl.vms.length} VMs</span>
-        </div>
-        <h1 className="bs-form-title">{tmpl.name}</h1>
-        <p className="bs-form-lede">
-          {tmpl.tagline}. ดาวน์โหลด Vagrantfile แล้วรัน <code className="sol-code">vagrant up</code> เพื่อสร้าง VM ทั้งหมดพร้อมกัน
-        </p>
+    <div className="cmp-summary">
+      <div className="cmp-pill">
+        <span className="cmp-pill-n">{cpus}</span>
+        <span className="cmp-pill-u">vCPU</span>
       </div>
-
-      <div className="sol-vms">
-        {tmpl.vms.map((vm, i) => {
-          const provLabels = (vm.provisioners || [])
-            .map((id) => PROVISIONERS[id]?.label)
-            .filter(Boolean);
-          return (
-            <div key={vm.name} className="sol-vm">
-              <div className="sol-vm-head">
-                <span className="sol-vm-idx">VM {i + 1}</span>
-                <span className="sol-vm-role">{vm.role}</span>
-                <span className="sol-vm-name">{vm.name}</span>
-              </div>
-              <div className="sol-vm-body">
-                <div className="sol-row">
-                  <span className="sol-key">Box</span>
-                  <span className="sol-val sol-mono">{vm.box}</span>
-                </div>
-                <div className="sol-row">
-                  <span className="sol-key">Provider</span>
-                  <span className="sol-val">{PROVIDER_LABEL[vm.provider] || vm.provider}</span>
-                </div>
-                <div className="sol-row">
-                  <span className="sol-key">Compute</span>
-                  <span className="sol-val sol-mono">{vm.cpus} vCPU · {vm.memory >= 1024 ? `${vm.memory / 1024} GB` : `${vm.memory} MB`} RAM</span>
-                </div>
-                <div className="sol-row">
-                  <span className="sol-key">Private IP</span>
-                  <span className="sol-val sol-mono">{vm.privateIp || '—'}</span>
-                </div>
-                {vm.forwards?.length > 0 && (
-                  <div className="sol-row">
-                    <span className="sol-key">Ports</span>
-                    <span className="sol-val sol-mono">
-                      {vm.forwards.map((f) => `${f.guest}→${f.host}`).join('  ')}
-                    </span>
-                  </div>
-                )}
-                {provLabels.length > 0 && (
-                  <div className="sol-row sol-row--provs">
-                    <span className="sol-key">Provisions</span>
-                    <span className="sol-val">
-                      {provLabels.map((l) => (
-                        <span key={l} className="sol-prov-chip">{l}</span>
-                      ))}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
+      <div className="cmp-pill">
+        <span className="cmp-pill-n">{gb}</span>
+        <span className="cmp-pill-u">GB RAM</span>
       </div>
+    </div>
+  );
+}
 
-      <div className="sol-note">
-        <div className="sec-note-glyph">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
-        </div>
-        <div className="sec-note-body">
-          <div className="sec-note-title">วิธีใช้งาน Solution นี้</div>
-          <div className="sec-note-text">
-            1. ดาวน์โหลด Vagrantfile แล้ววางในโฟลเดอร์ใหม่<br/>
-            2. รัน <code>vagrant up</code> เพื่อสร้างทุก VM (DC จะถูก provision ก่อน)<br/>
-            3. เชื่อมต่อด้วย <code>vagrant rdp dc-01</code> หรือ <code>vagrant rdp win-client</code><br/>
-            4. รอให้ DC รีบูตหลัง AD install เสร็จ จากนั้น Client จะ join domain อัตโนมัติ
+function MemoryMeter({ memory }) {
+  const max = 16384;
+  const pct = Math.min(100, (memory / max) * 100);
+  const ticks = [512, 2048, 4096, 8192, 16384];
+  return (
+    <div className="mm">
+      <div className="mm-track">
+        <div className="mm-fill" style={{ width: `${pct}%` }}></div>
+        {ticks.map((tk) => (
+          <div key={tk} className="mm-tick" style={{ left: `${(tk / max) * 100}%` }}>
+            <span className="mm-tick-lbl">{tk >= 1024 ? `${tk / 1024}G` : `${tk}M`}</span>
           </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Security note ─────────────────────────────────────────────────────────
+function SecurityNote() {
+  return (
+    <div className="sec-note">
+      <div className="sec-note-glyph">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg>
+      </div>
+      <div className="sec-note-body">
+        <div className="sec-note-title">Secrets stay out of the file</div>
+        <div className="sec-note-text">
+          Boxsmith never bakes passwords, SSH private keys, or cloud credentials into the generated
+          Vagrantfile. Reference them via environment variables (<code>ENV["VAULT_TOKEN"]</code>) or
+          a separate <code>.env</code> after download.
         </div>
       </div>
     </div>
   );
 }
 
+// ── Solution editor (editable accordion) ─────────────────────────────────
+function SolutionEditor({ tmpl, vms, onChange }) {
+  const { PROVISIONERS, OS_BOXES } = window.Boxsmith;
+  const [openIdx, setOpenIdx] = useS(0);
+
+  const updateVm = (i, patch) =>
+    onChange(vms.map((v, j) => (j === i ? { ...v, ...patch } : v)));
+  const updateSync = (i, patch) =>
+    onChange(vms.map((v, j) => (j === i ? { ...v, sync: { ...v.sync, ...patch } } : v)));
+
+  return (
+    <div className="sol-editor">
+      <div className="bs-form-head">
+        <div className="bs-form-eyebrow">
+          <span className="bs-form-glyph">{tmpl.glyph}</span>
+          <span>{tmpl.name}</span>
+          <span className="bs-form-tag sol-badge">Multi-VM · {vms.length} VMs</span>
+        </div>
+        <h1 className="bs-form-title">{tmpl.name}</h1>
+        <p className="bs-form-lede">
+          คลิกที่ VM เพื่อแก้ไขค่า — Vagrantfile อัปเดต Real-time ทางขวา กด <span className="bs-kbd">⌘D</span> เพื่อดาวน์โหลด
+        </p>
+      </div>
+
+      <div className="sol-vms">
+        {vms.map((vm, i) => (
+          <div key={vm.name} className={`sol-vm sol-acc ${openIdx === i ? 'sol-acc--open' : ''}`}>
+            <button
+              className="sol-acc-head"
+              type="button"
+              onClick={() => setOpenIdx(openIdx === i ? -1 : i)}
+            >
+              <span className="sol-vm-idx">VM {i + 1}</span>
+              <span className="sol-vm-role">{vm.role}</span>
+              <span className="sol-acc-meta">
+                {vm.cpus} vCPU · {vm.memory >= 1024 ? `${vm.memory / 1024} GB` : `${vm.memory} MB`}
+              </span>
+              <span className="sol-vm-name">{vm.name}</span>
+              <span className="sol-acc-chev">{openIdx === i ? '▴' : '▾'}</span>
+            </button>
+
+            {openIdx === i && (
+              <div className="sol-acc-body">
+                <Section n="A" title="OS Box" hint="Image from Vagrant Cloud">
+                  <BoxSelect
+                    value={vm.box}
+                    onChange={(v) => updateVm(i, { box: v })}
+                    boxes={OS_BOXES}
+                  />
+                </Section>
+
+                <Section n="B" title="Provider">
+                  <Segmented
+                    value={vm.provider}
+                    onChange={(v) => updateVm(i, { provider: v })}
+                    options={[
+                      { value: 'virtualbox', label: 'VirtualBox', glyph: '▣' },
+                      { value: 'hyperv', label: 'Hyper-V', glyph: '⊞' },
+                      { value: 'vmware_desktop', label: 'VMware', glyph: '◈' },
+                      { value: 'libvirt', label: 'libvirt', glyph: '◇' },
+                    ]}
+                  />
+                </Section>
+
+                <Section
+                  n="C"
+                  title="Compute"
+                  hint="Resources for this VM"
+                  right={<ComputeSummary cpus={vm.cpus} memory={vm.memory} />}
+                >
+                  <div className="fld-grid fld-grid--2">
+                    <Field label="vCPUs" hint="1 – 32">
+                      <NumberStepper
+                        value={vm.cpus}
+                        onChange={(v) => updateVm(i, { cpus: v })}
+                        min={1} max={32}
+                      />
+                    </Field>
+                    <Field label="Memory" hint="512 – 65 536 MB">
+                      <NumberStepper
+                        value={vm.memory}
+                        onChange={(v) => updateVm(i, { memory: v })}
+                        min={512} max={65536} step={512} suffix="MB"
+                      />
+                    </Field>
+                  </div>
+                  <MemoryMeter memory={vm.memory} />
+                </Section>
+
+                <Section n="D" title="Network" hint="IP and port forwards">
+                  <div className="fld-grid fld-grid--2">
+                    <Field label="Private network IP" hint="Host-only network">
+                      <TextInput
+                        value={vm.privateIp}
+                        onChange={(v) => updateVm(i, { privateIp: v })}
+                        placeholder="192.168.56.10"
+                        mono
+                      />
+                    </Field>
+                    <Field label="Public network" hint="Bridge to host LAN">
+                      <Toggle
+                        value={vm.publicNetwork}
+                        onChange={(v) => updateVm(i, { publicNetwork: v })}
+                        label={vm.publicNetwork ? 'Bridged to host network' : 'Host-only'}
+                      />
+                    </Field>
+                  </div>
+                  <Field label="Port forwarding" wide hint="Map host ports to guest services">
+                    <ForwardingList
+                      forwards={vm.forwards}
+                      onChange={(v) => updateVm(i, { forwards: v })}
+                      errors={{}}
+                    />
+                  </Field>
+                </Section>
+
+                <Section n="E" title="Synced Folder" hint="Share files between host and guest">
+                  <div className="fld-grid fld-grid--3">
+                    <Field label="Host path">
+                      <TextInput value={vm.sync.host} onChange={(v) => updateSync(i, { host: v })} mono />
+                    </Field>
+                    <Field label="Guest path">
+                      <TextInput value={vm.sync.guest} onChange={(v) => updateSync(i, { guest: v })} mono />
+                    </Field>
+                    <Field label="Sync type">
+                      <select
+                        className="inp inp--select"
+                        value={vm.sync.type}
+                        onChange={(e) => updateSync(i, { type: e.target.value })}
+                      >
+                        <option value="default">Default (VirtualBox shared)</option>
+                        <option value="nfs">NFS</option>
+                        <option value="rsync">rsync</option>
+                        <option value="smb">SMB</option>
+                      </select>
+                    </Field>
+                  </div>
+                </Section>
+
+                <Section
+                  n="F"
+                  title="Provisioning"
+                  hint="Run on first up"
+                  right={
+                    <div className="sect-pill">
+                      {vm.provisioners.length}/{Object.keys(PROVISIONERS).length}
+                    </div>
+                  }
+                >
+                  <ProvisionerPicker
+                    selected={vm.provisioners}
+                    onChange={(v) => updateVm(i, { provisioners: v })}
+                    catalog={PROVISIONERS}
+                  />
+                </Section>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <SecurityNote />
+    </div>
+  );
+}
+
 Object.assign(window, {
   TemplateRail, Section, Field, TextInput, NumberStepper, Segmented, Toggle,
-  BoxSelect, ForwardingList, ProvisionerPicker, SolutionView,
+  BoxSelect, ForwardingList, ProvisionerPicker,
+  ComputeSummary, MemoryMeter, SecurityNote,
+  SolutionEditor,
 });
