@@ -17,8 +17,9 @@
    - [Linux](#linux)
 4. [ใช้งาน Boxsmith](#4-ใช้งาน-boxsmith)
 5. [คำสั่ง Vagrant พื้นฐาน](#5-คำสั่ง-vagrant-พื้นฐาน)
-6. [Solution: Active Directory ADDS + Windows Client](#6-solution-active-directory-adds--windows-client)
-7. [แก้ปัญหาที่พบบ่อย](#7-แก้ปัญหาที่พบบ่อย)
+6. [Solution: AD DS + Windows Client (2 VMs)](#6-solution-ad-ds--windows-client-2-vms)
+7. [Solution: AD DS + 2 Windows Clients (3 VMs)](#7-solution-ad-ds--2-windows-clients-3-vms)
+8. [แก้ปัญหาที่พบบ่อย](#8-แก้ปัญหาที่พบบ่อย)
 
 ---
 
@@ -240,7 +241,7 @@ vagrant box update
 
 ---
 
-## 6. Solution: Active Directory ADDS + Windows Client
+## 6. Solution: AD DS + Windows Client (2 VMs)
 
 Solution นี้สร้าง **2 VM** พร้อมกัน:
 
@@ -345,32 +346,164 @@ Host Machine
 
 > ⚠️ **เปลี่ยน Password** ทันทีหลังติดตั้ง อย่า commit Vagrantfile ที่มี Password จริงขึ้น Git
 
-### เพิ่ม Windows Client เครื่องที่ 2
-
-แก้ไข Vagrantfile เพิ่ม VM ใหม่:
-
-```ruby
-config.vm.define "win-client-2" do |m|
-  m.vm.box = "gusztavvargadr/windows-10"
-  m.vm.hostname = "win-client-2"
-  m.vm.network "private_network", ip: "192.168.56.72"
-  m.vm.network "forwarded_port", guest: 3389, host: 13391
-  m.vm.provider "hyperv" do |v|
-    v.vmname = "win-client-2"
-    v.cpus = 2
-    v.memory = 4096
-  end
-  m.vm.provision "shell", name: "Join Domain", inline: <<-SHELL
-    $pass = ConvertTo-SecureString "P@ssword123!" -AsPlainText -Force
-    $cred = New-Object System.Management.Automation.PSCredential("LAB\\Administrator", $pass)
-    Add-Computer -DomainName "lab.local" -Credential $cred -Restart -Force
-  SHELL
-end
-```
+> 💡 ต้องการ **2 Client** พร้อมกันเลย? ดูหัวข้อ [7. Solution: AD DS + 2 Windows Clients](#7-solution-ad-ds--2-windows-clients-3-vms)
 
 ---
 
-## 7. แก้ปัญหาที่พบบ่อย
+## 7. Solution: AD DS + 2 Windows Clients (3 VMs)
+
+Solution นี้สร้าง **3 VM** พร้อมกัน — เหมาะสำหรับทดสอบ Group Policy, User Management และ Domain Services ในสภาพแวดล้อมจำลองที่สมจริงกว่า
+
+| VM | Role | OS | IP | RDP Port (Host) |
+|---|---|---|---|---|
+| `dc-01` | Domain Controller | Windows Server 2022 | 192.168.56.70 | 13389 |
+| `win-client-1` | Windows 10 Client 1 | Windows 10 | 192.168.56.71 | 13390 |
+| `win-client-2` | Windows 10 Client 2 | Windows 10 | 192.168.56.72 | 13391 |
+
+### ข้อกำหนดก่อนเริ่ม
+
+- ✅ Windows 10/11 Pro หรือ Windows Server (Host)
+- ✅ เปิด **Hyper-V** แล้ว (ดูหัวข้อ 2)
+- ✅ ติดตั้ง **Vagrant** แล้ว
+- ✅ RAM อย่างน้อย **20 GB** (DC 8 GB + Client-1 4 GB + Client-2 4 GB + Host ~4 GB)
+- ✅ พื้นที่ดิสก์อย่างน้อย **40 GB** (WS2022 ~9 GB + Win10 ×2 ~7 GB ×2 + overhead)
+
+### ขั้นตอนที่ 1 — สร้าง Vagrantfile
+
+1. เปิด Boxsmith ที่ [https://dekbacom.github.io/Vagrant-Generator-System/](https://dekbacom.github.io/Vagrant-Generator-System/)
+2. เลือก Template **"AD DS + 2 Windows Clients"** จาก Rail ซ้าย (ใต้หัวข้อ **Solutions**)
+3. กด **Download** เพื่อดาวน์โหลด `Vagrantfile`
+
+### ขั้นตอนที่ 2 — รัน Solution
+
+```powershell
+# สร้างโฟลเดอร์
+mkdir C:\vagrant-lab-3vm
+cd C:\vagrant-lab-3vm
+
+# วาง Vagrantfile ที่ดาวน์โหลดมา แล้วรันทั้งหมดพร้อมกัน
+vagrant up
+
+# หรือสร้างตามลำดับ (แนะนำ — DC ต้องพร้อมก่อน Client join)
+vagrant up dc-01
+vagrant up win-client-1
+vagrant up win-client-2
+```
+
+> **หมายเหตุ:** DC ใช้เวลา **10–20 นาที** สำหรับ provision และ reboot  
+> Client แต่ละเครื่องใช้เวลา **5–10 นาที** สำหรับ join domain และ reboot
+
+### ขั้นตอนที่ 3 — ตรวจสอบ Domain Controller
+
+```powershell
+vagrant rdp dc-01
+
+# ใน DC VM
+Get-ADDomain
+Get-ADDomainController
+Get-Service ADWS, NTDS, DNS | Select Name, Status
+
+# ดูรายการ Computer ที่ join domain แล้ว
+Get-ADComputer -Filter * | Select Name, DNSHostName
+```
+
+**ผลลัพธ์ที่ถูกต้อง (หลัง Client ทั้งสองเครื่อง join แล้ว):**
+```
+Name          DNSHostName
+----          -----------
+DC-01         dc-01.lab.local
+WIN-CLIENT-1  win-client-1.lab.local
+WIN-CLIENT-2  win-client-2.lab.local
+```
+
+### ขั้นตอนที่ 4 — ตรวจสอบ Windows Clients
+
+```powershell
+# Client 1
+vagrant rdp win-client-1
+(Get-WmiObject Win32_ComputerSystem).Domain   # lab.local
+$env:COMPUTERNAME                              # WIN-CLIENT-1
+
+# Client 2
+vagrant rdp win-client-2
+(Get-WmiObject Win32_ComputerSystem).Domain   # lab.local
+$env:COMPUTERNAME                              # WIN-CLIENT-2
+```
+
+### โครงสร้าง Network
+
+```
+Host Machine (Windows + Hyper-V)
+    │
+    ├─ Hyper-V Virtual Switch (192.168.56.0/24)
+    │       │
+    │       ├─ dc-01          (192.168.56.70)  ← Domain Controller
+    │       │   ├─ AD DS, DNS, LDAP
+    │       │   └─ Port: 3389, 389, 636
+    │       │
+    │       ├─ win-client-1   (192.168.56.71)  ← Windows 10 (joined lab.local)
+    │       │   └─ Port: 3389
+    │       │
+    │       └─ win-client-2   (192.168.56.72)  ← Windows 10 (joined lab.local)
+    │           └─ Port: 3389
+    │
+    Port Forwarding (Host → Guest):
+    ├─ localhost:13389 → dc-01:3389         (RDP to DC)
+    ├─ localhost:10389 → dc-01:389          (LDAP)
+    ├─ localhost:10636 → dc-01:636          (LDAPS)
+    ├─ localhost:13390 → win-client-1:3389  (RDP to Client 1)
+    └─ localhost:13391 → win-client-2:3389  (RDP to Client 2)
+```
+
+### ข้อมูล Domain (Default)
+
+| รายการ | ค่า |
+|---|---|
+| Domain Name | `lab.local` |
+| NetBIOS Name | `LAB` |
+| Administrator | `LAB\Administrator` |
+| Safe Mode Password | `P@ssword123!` |
+| DC IP | `192.168.56.70` |
+| Client 1 IP | `192.168.56.71` |
+| Client 2 IP | `192.168.56.72` |
+
+> ⚠️ **เปลี่ยน Password** ทันทีหลังติดตั้ง อย่า commit Vagrantfile ที่มี Password จริงขึ้น Git
+
+### คำสั่งจัดการ Multi-VM
+
+```powershell
+# ดูสถานะ VM ทั้งหมด
+vagrant status
+
+# หยุดเฉพาะ Client
+vagrant halt win-client-1 win-client-2
+
+# หยุด VM ทั้งหมด
+vagrant halt
+
+# รีสตาร์ท Client เครื่องที่ 2 พร้อม provision ใหม่
+vagrant reload win-client-2 --provision
+
+# ลบ VM ทั้งหมด
+vagrant destroy -f
+
+# ลบเฉพาะ Client
+vagrant destroy win-client-1 win-client-2 -f
+```
+
+### สิ่งที่ทำได้เพิ่มเติมใน Lab นี้
+
+| Use Case | คำอธิบาย |
+|---|---|
+| Group Policy | สร้าง GPO บน DC และ apply กับ Client ทั้งสองเครื่อง |
+| User Management | สร้าง AD User แล้ว login เข้า Client ด้วย Domain Account |
+| File Server | เพิ่ม File Server role บน DC และ map network drive จาก Client |
+| DNS Testing | ทดสอบ name resolution ระหว่าง VM ด้วยชื่อ hostname |
+| LDAP Integration | ทดสอบ LDAP query จาก Client ไปยัง DC ผ่าน port 389 |
+
+---
+
+## 8. แก้ปัญหาที่พบบ่อย
 
 ### ❌ `vagrant up` ล้มเหลว — "VT-x is not available"
 
