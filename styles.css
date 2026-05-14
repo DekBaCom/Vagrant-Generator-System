@@ -669,6 +669,29 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.prov-platform {
+  display: inline-flex; align-items: center;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 2px 5px;
+  border-radius: 3px;
+  margin-top: 4px;
+  width: fit-content;
+}
+.prov-platform--linux {
+  background: color-mix(in oklch, var(--ac) 14%, transparent);
+  color: var(--ac);
+  border: 1px solid color-mix(in oklch, var(--ac) 28%, transparent);
+}
+.prov-platform--windows {
+  background: oklch(0.45 0.16 240 / 0.18);
+  color: oklch(0.80 0.12 240);
+  border: 1px solid oklch(0.45 0.16 240 / 0.30);
+}
+.theme-parchment .prov-platform--windows {
+  color: oklch(0.42 0.16 240);
+  background: oklch(0.45 0.16 240 / 0.10);
+}
 
 /* ── Compute summary + meter ───────────────────────────────────────────── */
 .cmp-summary { display: flex; gap: 6px; }

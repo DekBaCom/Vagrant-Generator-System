@@ -301,6 +301,11 @@ function ProvisionerPicker({ selected, onChange, catalog }) {
             <span className="prov-body">
               <span className="prov-label">{p.label}</span>
               <span className="prov-inline">{p.inline}</span>
+              {p.platform && (
+                <span className={`prov-platform prov-platform--${p.platform}`}>
+                  {p.platform === 'windows' ? '⊞ win' : '◐ linux'}
+                </span>
+              )}
             </span>
           </button>
         );

@@ -32,14 +32,27 @@
   ];
 
   const PROVISIONERS = {
-    update:    { id: 'update',    label: 'Update package index',       inline: 'apt-get update && apt-get upgrade -y' },
-    docker:    { id: 'docker',    label: 'Install Docker Engine',      inline: "curl -fsSL https://get.docker.com | sh && usermod -aG docker vagrant" },
-    nginx:     { id: 'nginx',     label: 'Install nginx',              inline: 'apt-get install -y nginx && systemctl enable --now nginx' },
-    nodejs:    { id: 'nodejs',    label: 'Install Node.js 20 LTS',     inline: 'curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get install -y nodejs' },
-    postgres:  { id: 'postgres',  label: 'Install PostgreSQL 16',      inline: 'apt-get install -y postgresql-16 && systemctl enable --now postgresql' },
-    redis:     { id: 'redis',     label: 'Install Redis',              inline: 'apt-get install -y redis-server && systemctl enable --now redis-server' },
-    git:       { id: 'git',       label: 'Install git + build tools',  inline: 'apt-get install -y git build-essential' },
-    firewall:  { id: 'firewall',  label: 'Enable UFW firewall',        inline: 'ufw --force enable && ufw allow 22 && ufw allow 80' },
+    update:           { id: 'update',           label: 'Update package index',              platform: 'linux',   inline: 'apt-get update && apt-get upgrade -y' },
+    docker:           { id: 'docker',           label: 'Install Docker Engine',             platform: 'linux',   inline: "curl -fsSL https://get.docker.com | sh && usermod -aG docker vagrant" },
+    nginx:            { id: 'nginx',            label: 'Install nginx',                     platform: 'linux',   inline: 'apt-get install -y nginx && systemctl enable --now nginx' },
+    nodejs:           { id: 'nodejs',           label: 'Install Node.js 20 LTS',            platform: 'linux',   inline: 'curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get install -y nodejs' },
+    postgres:         { id: 'postgres',         label: 'Install PostgreSQL 16',             platform: 'linux',   inline: 'apt-get install -y postgresql-16 && systemctl enable --now postgresql' },
+    redis:            { id: 'redis',            label: 'Install Redis',                     platform: 'linux',   inline: 'apt-get install -y redis-server && systemctl enable --now redis-server' },
+    git:              { id: 'git',              label: 'Install git + build tools',         platform: 'linux',   inline: 'apt-get install -y git build-essential' },
+    firewall:         { id: 'firewall',         label: 'Enable UFW firewall',               platform: 'linux',   inline: 'ufw --force enable && ufw allow 22 && ufw allow 80' },
+    active_directory: {
+      id: 'active_directory',
+      label: 'Active Directory Domain Services',
+      platform: 'windows',
+      inline: 'Install-WindowsFeature AD-Domain-Services; Install-ADDSForest -DomainName "lab.local"',
+      script: [
+        'Install-WindowsFeature -Name AD-Domain-Services -IncludeManagementTools',
+        'Import-Module ADDSDeployment',
+        'Install-ADDSForest -DomainName "lab.local" -DomainNetbiosName "LAB" `',
+        '  -InstallDns:$true -Force:$true `',
+        '  -SafeModeAdministratorPassword (ConvertTo-SecureString "P@ssword123!" -AsPlainText -Force)',
+      ],
+    },
   };
 
   const TEMPLATES = {
@@ -148,6 +161,27 @@
         provisioners: [],
       },
     },
+    ad: {
+      id: 'ad',
+      name: 'Active Directory DC',
+      tagline: 'Windows Server 2022, AD DS, DNS',
+      glyph: '⊟',
+      defaults: {
+        hostname: 'dc-01',
+        box: 'gusztavvargadr/windows-server-2022',
+        provider: 'hyperv',
+        cpus: 4, memory: 8192,
+        privateIp: '192.168.56.70',
+        publicNetwork: false,
+        forwards: [
+          { guest: 3389, host: 13389, protocol: 'tcp' },
+          { guest: 389,  host: 10389, protocol: 'tcp' },
+          { guest: 636,  host: 10636, protocol: 'tcp' },
+        ],
+        sync: { host: '.', guest: 'C:\\vagrant', type: 'smb' },
+        provisioners: ['active_directory'],
+      },
+    },
   };
 
   // ── generation ──────────────────────────────────────────────────────────
@@ -216,12 +250,13 @@
     if (provs.length) {
       push('  # ── Provisioning ───────────────────────────────────', 'comment');
       provs.forEach((p, i) => {
+        const scriptLines = p.script || [p.inline];
         push(
           `  config.vm.provision "shell", name: ${rubyStr(p.label)}, inline: <<-SHELL`,
           'code',
           `prov-${i}`
         );
-        push(`    ${p.inline}`, 'code', `prov-${i}`);
+        scriptLines.forEach((line) => push(`    ${line}`, 'code', `prov-${i}`));
         push('  SHELL', 'code', `prov-${i}`);
         if (i < provs.length - 1) push('');
       });
