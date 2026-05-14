@@ -290,6 +290,8 @@ function App() {
         </section>
       </div>
 
+      <Footer />
+
       <TweaksPanel>
         <TweakSection label="Theme" />
         <TweakRadio
@@ -342,7 +344,7 @@ function TopBar({ tmpl, cfg, errCount, downloadFlash, onDownload }) {
           </svg>
         </div>
         <div className="brand-text">
-          <span className="brand-name">Boxsmith</span>
+          <span className="brand-name">Vagrant Generator System</span>
           <span className="brand-sub">Vagrantfile Generator</span>
         </div>
       </div>
@@ -400,6 +402,18 @@ function FormHeader({ tmpl, cfg }) {
   );
 }
 
+
+function Footer() {
+  return (
+    <footer className="bs-footer">
+      <span className="bs-footer-label">Contributed by</span>
+      <span className="bs-footer-name">Mr.Abdulloh Etaeluengoh</span>
+      <span className="bs-footer-sep">·</span>
+      <span className="bs-footer-label">E-Mail :</span>
+      <a className="bs-footer-email" href="mailto:Abdulloh.eg@gmail.com">Abdulloh.eg@gmail.com</a>
+    </footer>
+  );
+}
 
 function TopBanner() {
   return (
