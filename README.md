@@ -1,5 +1,7 @@
 # Boxsmith — Vagrantfile Generator
 
+> 📖 **คู่มือภาษาไทย:** [INSTALL_TH.md](INSTALL_TH.md) — คู่มือการติดตั้ง Vagrant และตั้งค่า Solution Active Directory ฉบับสมบูรณ์
+
 A self-service web app that generates Vagrant configuration files through a visual UI.  
 Pick a template, customize the spec, and download a ready-to-use `Vagrantfile` — no manual coding required.
 
@@ -121,6 +123,7 @@ vagrant destroy
 | CI Runner | Debian 12 | VirtualBox | 6 | 8 GB | — |
 | Windows Test Bench | Windows Server 2022 | Hyper-V | 4 | 8 GB | 3389→13389 |
 | **Active Directory DC** | Windows Server 2022 | Hyper-V | 4 | 8 GB | 3389, 389, 636 |
+| **AD DS + Windows Client** ⭐ | WS2022 + Win10 (2 VMs) | Hyper-V | 4+2 | 8+4 GB | 3389×2, 389, 636 |
 
 ---
 

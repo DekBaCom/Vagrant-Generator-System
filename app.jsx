@@ -20,7 +20,7 @@ const ACCENTS = {
 
 function App() {
   const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
-  const { TEMPLATES, OS_BOXES, PROVIDER_KEY, PROVISIONERS, generate, validate, linesToString } =
+  const { TEMPLATES, OS_BOXES, PROVIDER_KEY, PROVISIONERS, generate, generateSolution, validate, linesToString } =
     window.Boxsmith;
 
   const [templateId, setTemplateId] = useState('web');
@@ -31,9 +31,15 @@ function App() {
   const changedTimerRef = useRef(null);
   const prevLinesRef = useRef(null);
 
-  const errors = useMemo(() => validate(cfg), [cfg]);
+  const tmplObj = TEMPLATES[templateId];
+  const isSolution = Boolean(tmplObj.solution);
+
+  const errors = useMemo(() => isSolution ? {} : validate(cfg), [isSolution, cfg]);
   const errCount = Object.keys(errors).length;
-  const lines = useMemo(() => generate(cfg), [cfg]);
+  const lines = useMemo(
+    () => isSolution ? generateSolution(tmplObj) : generate(cfg),
+    [isSolution, tmplObj, cfg]
+  );
 
   // Diff against previous render — flash any line whose key changed.
   useEffect(() => {
@@ -65,7 +71,9 @@ function App() {
 
   const pickTemplate = (id) => {
     setTemplateId(id);
-    setCfg(structuredClone(TEMPLATES[id].defaults));
+    if (!TEMPLATES[id].solution) {
+      setCfg(structuredClone(TEMPLATES[id].defaults));
+    }
   };
 
   const onDownload = () => {
@@ -107,7 +115,7 @@ function App() {
   const accent = ACCENTS[t.accent] || ACCENTS.amber;
   const layoutClass = `layout-${t.previewSide}`;
   const densityClass = `density-${t.density}`;
-  const tmpl = TEMPLATES[templateId];
+  const tmpl = tmplObj;
 
   return (
     <div
@@ -129,6 +137,10 @@ function App() {
         <TemplateRail templates={TEMPLATES} selectedId={templateId} onPick={pickTemplate} />
 
         <main className="bs-form">
+          {isSolution ? (
+            <SolutionView tmpl={tmpl} />
+          ) : (
+          <>
           <FormHeader tmpl={tmpl} cfg={cfg} />
 
           <Section n="01" title="Identity" hint="What this VM calls itself">
@@ -252,6 +264,8 @@ function App() {
           </Section>
 
           <SecurityNote />
+          </>
+          )}
         </main>
 
         <section className="bs-preview">

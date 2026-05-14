@@ -4,6 +4,25 @@ const { useState: useS, useEffect: useE, useRef: useR } = React;
 
 // ── Templates rail ────────────────────────────────────────────────────────
 function TemplateRail({ templates, selectedId, onPick }) {
+  const singles = Object.values(templates).filter((t) => !t.solution);
+  const solutions = Object.values(templates).filter((t) => t.solution);
+  const renderItem = (t) => {
+    const active = t.id === selectedId;
+    return (
+      <button
+        key={t.id}
+        className={`tmpl ${active ? 'tmpl--active' : ''}`}
+        onClick={() => onPick(t.id)}
+      >
+        <span className="tmpl-glyph">{t.glyph}</span>
+        <span className="tmpl-body">
+          <span className="tmpl-name">{t.name}</span>
+          <span className="tmpl-tag">{t.tagline}</span>
+        </span>
+        {active && <span className="tmpl-check">●</span>}
+      </button>
+    );
+  };
   return (
     <aside className="rail">
       <div className="rail-head">
@@ -11,23 +30,11 @@ function TemplateRail({ templates, selectedId, onPick }) {
         <div className="rail-title">Start from a recipe</div>
       </div>
       <div className="rail-list">
-        {Object.values(templates).map((t) => {
-          const active = t.id === selectedId;
-          return (
-            <button
-              key={t.id}
-              className={`tmpl ${active ? 'tmpl--active' : ''}`}
-              onClick={() => onPick(t.id)}
-            >
-              <span className="tmpl-glyph">{t.glyph}</span>
-              <span className="tmpl-body">
-                <span className="tmpl-name">{t.name}</span>
-                <span className="tmpl-tag">{t.tagline}</span>
-              </span>
-              {active && <span className="tmpl-check">●</span>}
-            </button>
-          );
-        })}
+        {singles.map(renderItem)}
+        <div className="rail-divider">
+          <span>Solutions</span>
+        </div>
+        {solutions.map(renderItem)}
       </div>
       <div className="rail-foot">
         <div className="rail-foot-line">
@@ -314,7 +321,95 @@ function ProvisionerPicker({ selected, onChange, catalog }) {
   );
 }
 
+// ── Solution view ─────────────────────────────────────────────────────────
+function SolutionView({ tmpl }) {
+  const { PROVISIONERS, PROVIDER_LABEL } = window.Boxsmith;
+  return (
+    <div className="sol-root">
+      <div className="bs-form-head">
+        <div className="bs-form-eyebrow">
+          <span className="bs-form-glyph">{tmpl.glyph}</span>
+          <span>{tmpl.name}</span>
+          <span className="bs-form-tag sol-badge">Multi-VM Solution · {tmpl.vms.length} VMs</span>
+        </div>
+        <h1 className="bs-form-title">{tmpl.name}</h1>
+        <p className="bs-form-lede">
+          {tmpl.tagline}. ดาวน์โหลด Vagrantfile แล้วรัน <code className="sol-code">vagrant up</code> เพื่อสร้าง VM ทั้งหมดพร้อมกัน
+        </p>
+      </div>
+
+      <div className="sol-vms">
+        {tmpl.vms.map((vm, i) => {
+          const provLabels = (vm.provisioners || [])
+            .map((id) => PROVISIONERS[id]?.label)
+            .filter(Boolean);
+          return (
+            <div key={vm.name} className="sol-vm">
+              <div className="sol-vm-head">
+                <span className="sol-vm-idx">VM {i + 1}</span>
+                <span className="sol-vm-role">{vm.role}</span>
+                <span className="sol-vm-name">{vm.name}</span>
+              </div>
+              <div className="sol-vm-body">
+                <div className="sol-row">
+                  <span className="sol-key">Box</span>
+                  <span className="sol-val sol-mono">{vm.box}</span>
+                </div>
+                <div className="sol-row">
+                  <span className="sol-key">Provider</span>
+                  <span className="sol-val">{PROVIDER_LABEL[vm.provider] || vm.provider}</span>
+                </div>
+                <div className="sol-row">
+                  <span className="sol-key">Compute</span>
+                  <span className="sol-val sol-mono">{vm.cpus} vCPU · {vm.memory >= 1024 ? `${vm.memory / 1024} GB` : `${vm.memory} MB`} RAM</span>
+                </div>
+                <div className="sol-row">
+                  <span className="sol-key">Private IP</span>
+                  <span className="sol-val sol-mono">{vm.privateIp || '—'}</span>
+                </div>
+                {vm.forwards?.length > 0 && (
+                  <div className="sol-row">
+                    <span className="sol-key">Ports</span>
+                    <span className="sol-val sol-mono">
+                      {vm.forwards.map((f) => `${f.guest}→${f.host}`).join('  ')}
+                    </span>
+                  </div>
+                )}
+                {provLabels.length > 0 && (
+                  <div className="sol-row sol-row--provs">
+                    <span className="sol-key">Provisions</span>
+                    <span className="sol-val">
+                      {provLabels.map((l) => (
+                        <span key={l} className="sol-prov-chip">{l}</span>
+                      ))}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="sol-note">
+        <div className="sec-note-glyph">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+        </div>
+        <div className="sec-note-body">
+          <div className="sec-note-title">วิธีใช้งาน Solution นี้</div>
+          <div className="sec-note-text">
+            1. ดาวน์โหลด Vagrantfile แล้ววางในโฟลเดอร์ใหม่<br/>
+            2. รัน <code>vagrant up</code> เพื่อสร้างทุก VM (DC จะถูก provision ก่อน)<br/>
+            3. เชื่อมต่อด้วย <code>vagrant rdp dc-01</code> หรือ <code>vagrant rdp win-client</code><br/>
+            4. รอให้ DC รีบูตหลัง AD install เสร็จ จากนั้น Client จะ join domain อัตโนมัติ
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 Object.assign(window, {
   TemplateRail, Section, Field, TextInput, NumberStepper, Segmented, Toggle,
-  BoxSelect, ForwardingList, ProvisionerPicker,
+  BoxSelect, ForwardingList, ProvisionerPicker, SolutionView,
 });
