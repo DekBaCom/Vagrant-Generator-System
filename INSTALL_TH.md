@@ -20,7 +20,8 @@
 6. [Solution: AD DS + Windows Client (2 VMs)](#6-solution-ad-ds--windows-client-2-vms)
 7. [Solution: AD DS + 2 Windows Clients (3 VMs)](#7-solution-ad-ds--2-windows-clients-3-vms)
 8. [Solution: WS2025 AD + DHCP + Win11 (4 VMs)](#8-solution-ws2025-ad--dhcp--win11-4-vms)
-9. [แก้ปัญหาที่พบบ่อย](#9-แก้ปัญหาที่พบบ่อย)
+9. [Template: Windows 11 Desktop](#9-template-windows-11-desktop)
+10. [แก้ปัญหาที่พบบ่อย](#10-แก้ปัญหาที่พบบ่อย)
 
 ---
 
@@ -698,7 +699,106 @@ vagrant destroy win11-client-1 win11-client-2 -f
 
 ---
 
-## 9. แก้ปัญหาที่พบบ่อย
+## 9. Template: Windows 11 Desktop
+
+Template นี้สร้าง **Windows 11 Pro** VM เครื่องเดียว — เหมาะสำหรับ dev/test บน desktop environment, ทดสอบ software บน Windows 11, หรือเตรียม environment ก่อน join domain
+
+| รายการ | ค่า |
+|---|---|
+| OS | Windows 11 Pro |
+| Box | `gusztavvargadr/windows-11` |
+| Provider | Hyper-V |
+| CPU / RAM | 2 vCPU / 4 GB (ปรับได้) |
+| Private IP | 192.168.56.90 |
+| RDP (Host → Guest) | localhost:13393 → VM:3389 |
+| Synced Folder | SMB (`.` → `C:\vagrant`) |
+
+### ข้อกำหนดก่อนเริ่ม
+
+- ✅ Windows 10/11 Pro หรือ Windows Server (Host)
+- ✅ เปิด **Hyper-V** แล้ว (ดูหัวข้อ 2)
+- ✅ ติดตั้ง **Vagrant** แล้ว
+- ✅ RAM อย่างน้อย **8 GB** (VM ใช้ 4 GB + Host ~4 GB)
+- ✅ พื้นที่ดิสก์อย่างน้อย **20 GB** (Windows 11 box ~8 GB)
+
+### ขั้นตอนการใช้งาน
+
+**ขั้นตอนที่ 1 — สร้าง Vagrantfile**
+
+1. เปิด Boxsmith ที่ [https://dekbacom.github.io/Vagrant-Generator-System/](https://dekbacom.github.io/Vagrant-Generator-System/)
+2. เลือก Template **"Windows 11 Desktop"** จาก Rail ด้านซ้าย
+3. ปรับแต่งค่าตามต้องการ เช่น เพิ่ม CPU/RAM, เปลี่ยน IP, เพิ่ม provisioner
+4. กด **Download** เพื่อดาวน์โหลด `Vagrantfile`
+
+**ขั้นตอนที่ 2 — รัน VM**
+
+```powershell
+mkdir C:\vagrant-win11
+cd C:\vagrant-win11
+# วาง Vagrantfile ที่ดาวน์โหลดมา แล้วรัน
+vagrant up
+```
+
+> **หมายเหตุ:** การดาวน์โหลด Box ครั้งแรกใช้เวลานาน (~8 GB) — ดาวน์โหลดครั้งเดียวและนำกลับมาใช้ใหม่ได้
+
+**ขั้นตอนที่ 3 — เชื่อมต่อผ่าน RDP**
+
+```powershell
+# เชื่อมต่อผ่าน Vagrant (เปิด Remote Desktop Connection อัตโนมัติ)
+vagrant rdp
+
+# หรือเชื่อมต่อด้วยตนเองผ่าน Remote Desktop Connection
+# Host: localhost  Port: 13393
+# Username: vagrant  Password: vagrant
+```
+
+**ขั้นตอนที่ 4 — ตรวจสอบสถานะ VM**
+
+```powershell
+# ดูสถานะ
+vagrant status
+
+# รีสตาร์ท
+vagrant reload
+
+# หยุด VM
+vagrant halt
+
+# ลบ VM
+vagrant destroy
+```
+
+### ตัวอย่าง Use Case
+
+| Use Case | คำอธิบาย |
+|---|---|
+| Software Testing | ทดสอบ installer / application บน Windows 11 ที่สะอาดทุกครั้ง |
+| UI Automation | รัน Selenium / Playwright test บน Windows browser |
+| Dev Environment | ตั้งค่า development tools บน Windows แบบ reproducible |
+| Domain Client | ใช้ join domain ภายหลัง โดยเพิ่ม provisioner `Join Active Directory Domain` |
+| Snapshot Testing | ทดสอบ registry, group policy, software install ในสภาพแวดล้อมที่แยกออกมา |
+
+### เพิ่ม Provisioner (ตัวอย่าง)
+
+หากต้องการ install software เพิ่มเติม สามารถเพิ่ม provisioner ใน Boxsmith ก่อน download หรือแก้ไข Vagrantfile โดยตรง:
+
+```ruby
+config.vm.provision "shell", inline: <<-SHELL
+  # ติดตั้ง Chocolatey package manager
+  Set-ExecutionPolicy Bypass -Scope Process -Force
+  [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+  iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+  # ติดตั้ง tools ผ่าน Chocolatey
+  choco install -y googlechrome vscode git
+SHELL
+```
+
+> ⚠️ Windows 11 ต้องใช้ **Hyper-V** เท่านั้น — ไม่รองรับ VirtualBox เนื่องจาก TPM/Secure Boot requirement
+
+---
+
+## 10. แก้ปัญหาที่พบบ่อย
 
 ### ❌ `vagrant up` ล้มเหลว — "VT-x is not available"
 
