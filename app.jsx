@@ -335,7 +335,7 @@ function TopBar({ tmpl, cfg, errCount, downloadFlash, onDownload }) {
           </svg>
         </div>
         <div className="brand-text">
-          <span className="brand-name">Vagrant Generator System</span>
+          <span className="brand-name">Vagrant</span>
           <span className="brand-sub">Vagrantfile Generator</span>
         </div>
       </div>

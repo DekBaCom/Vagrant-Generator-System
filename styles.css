@@ -983,7 +983,7 @@ body {
 /* ── Footer ────────────────────────────────────────────────────────────── */
 .bs-footer {
   height: 32px;
-  display: flex; align-items: center; gap: 7px;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
   padding: 0 18px;
   border-top: 1px solid var(--line);
   background: var(--bg-1);
@@ -1002,7 +1002,6 @@ body {
 }
 .bs-footer-email:hover { text-decoration: underline; }
 .bs-footer-links {
-  margin-left: auto;
   display: flex; align-items: center; gap: 7px;
   color: var(--ink-2);
 }
